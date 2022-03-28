@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!--Bootstrap link -->
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" 
+        crossorigin="anonymous">
+
+     <!--Fontawesome link-->  
+     <script src="https://kit.fontawesome.com/1a6f498f86.js" crossorigin="anonymous"></script>
+
+     <!--Css link-->
+    <link rel="stylesheet" href="style-home.css">
+
+    <title>Document</title>
+</head>
+<body>
+
+    <div class="home-container">
+        <div class="row">
+
+            <!--MOVIE PART-->
+            <div class="col-9" id="movie-container">
+                <button onclick="downloadMovie()">Download</button>
+            </div>
+
+            <!--CHAT PART-->
+            <div class="col-3" id="chat-container">
+
+                <div class="input-group add-delete-friend mb-3">
+                    <input type="text" class="form-control" id="input-add-delete-friend" placeholder="Add or Delete a Friend">
+                    <button class="btn btn-outline-light" id="button-add-friend" type="button">Add</button>
+                    <button class="btn btn-outline-light" id="button-delete-friend" type="button">Delete</button>
+                </div>
+
+                <div class="chat" id="chat">
+                    
+                    <div id="back-button" onclick="stopChatMode()">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </div>
+
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="chat-input">
+                        <button class="btn btn-outline-light" type="button" id="send-message">Send</button>
+                    </div>
+
+                    <div class="chat-page">
+                        <div class="msg-inbox">
+                            <div class="msg-page" id="msg-page">
+                                <div class="msg-part" id="msg-part">
+                                
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+        </div> 
+    </div>
+
+    <script type="text/javascript" src="chatmode.js"></script>
+    <script src="downloadHelper.js"></script>
+
+    <script type="module">
+
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
+        import { getDatabase, ref, child, onValue, get, set, update, remove } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+      
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCBEWYsah0qKPCHrzVDKh5Zsn2w6pXCMqw",
+          authDomain: "web-movie-party.firebaseapp.com",
+          projectId: "web-movie-party",
+          storageBucket: "web-movie-party.appspot.com",
+          messagingSenderId: "192093684269",
+          appId: "1:192093684269:web:da1360e0cd6e2057f9eea4"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const firebase_database = getDatabase(app);
+        const dataRef = ref(firebase_database);
+
+        // USERS
+
+        var userActive;
+        var userToChat;
+
+        function getUsers(){
+            userActive = localStorage.getItem("userActive");
+            userToChat = localStorage.getItem("userToChat");
+        }
+
+        // FRIENDS
+
+        // Get Friends
+
+        const chat_container = document.getElementById('chat-container');
+        var table_general;
+        var createTableBool = "true";
+
+        var friendsLenght = 0;
+        var friendIndex = 0;
+       
+        function createTable(){
+            // create & add header
+            let table = document.createElement('table');
+            let table_head = document.createElement('thead');
+            let t_head = document.createElement('th');
+            t_head.innerText = "Friends";
+            table_head.appendChild(t_head);
+
+            table.classList.add("table");
+            table.classList.add("table-borderless");
+            table.setAttribute("id", "friends-table");
+            table.appendChild(table_head);
+
+            table_general = table;
+        }
+
+        var table_counter = 0;
+        function getFriend(username){
+            if(table_general != null && createTableBool == "true"){
+                table_general.remove();
+            }
+
+            if(createTableBool == "true"){
+                createTable();
+                createTableBool = "false";
+            }
+
+            // create & add rows
+            let table_body = document.createElement('tbody');
+            let table_row = document.createElement('tr');
+            let table_document = document.createElement('td');
+            let friend_button = document.createElement('button');
+
+            friend_button.setAttribute("id", "button-friend");
+            friend_button.classList.add("btn");
+            friend_button.classList.add("btn-outline-light");
+            friend_button.setAttribute("onclick", "startChatMode()");
+            friend_button.setAttribute("value", username);
+            friend_button.innerHTML = username;
+
+            table_document.appendChild(friend_button);
+            table_row.appendChild(table_document);
+            table_body.appendChild(table_row);
+            table_general.appendChild(table_body);
+            table_counter++;
+            if(table_counter == friendsLenght){
+                chat_container.appendChild(table_general);
+                table_counter = 0;
+            }
+        }
+
+        function friendList(Friend){
+            createTableBool = "true";
+            Friend.forEach(element => {
+                getFriend(element.username);
+            });
+        }
+
+        function getAllFriends(){
+            get(child(dataRef, "users/" + userActive + "/friends/"))
+            .then((snapshot) => {
+                var friends = [];
+                snapshot.forEach(childSnapshot => {
+                    friends.push(childSnapshot.val());
+                });
+
+                friendsLenght = friends.length;
+                friendList(friends);
+            });
+        }
+
+
+        const input_add_delete_friend = document.querySelector('#input-add-delete-friend');
+        const button_add_friend = document.querySelector('#button-add-friend');
+        const button_delete_friend = document.querySelector('#button-delete-friend');
+        
+        // Add Friend
+
+        button_add_friend.addEventListener('click', () => {
+            findLastUser(input_add_delete_friend.value);
+        });
+
+        var lastFriendCounter = 0;
+        function findLastUser(username){
+            get(child(dataRef, "users/" + userActive + "/friends/"))
+            .then((snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    childSnapshot.forEach(childSnapshot2 => {
+                        lastFriendCounter++;
+                        if(lastFriendCounter == friendsLenght){
+                            friendIndex = childSnapshot2.ref.parent.key;
+                            friendIndex++;
+                            lastFriendCounter = 0;
+                            addFriend(username);
+                        }
+                    });
+                });
+            });
+            
+            if(friendsLenght == 0){
+                friendIndex = 1;
+                addFriend(username);
+            }
+        }
+
+        function addFriend(username){
+            set(ref(firebase_database, "users/" + userActive + "/friends/" + friendIndex),{
+                username: username
+            });
+
+            set(ref(firebase_database, "users/" + username + "/messages/" + userActive),{
+                messageCounter: 0,
+                readMessageCounter: 0
+            });
+
+            set(ref(firebase_database, "users/" + userActive + "/messages/" + username),{
+                messageCounter: 0,
+                readMessageCounter: 0
+            });
+            
+            getAllFriends();
+            input_add_delete_friend.value = "";
+        }
+
+        // Delete Friend
+
+        button_delete_friend.addEventListener('click', () => {
+            findUser(input_add_delete_friend.value);
+        });
+
+        function findUser(username){
+            get(child(dataRef, "users/" + userActive + "/friends/"))
+            .then((snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    childSnapshot.forEach(childSnapshot2 => {
+                        if(childSnapshot2.val() == username){
+                            friendIndex = childSnapshot2.ref.parent.key;
+                            deleteFriend();
+                        }
+                    });
+                });
+            })
+        }
+
+        function deleteFriend(){
+            remove(ref(firebase_database, "users/" + userActive + "/friends/" + friendIndex))
+            .then(() => {
+                getAllFriends();
+                input_add_delete_friend.value = "";
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+        }
+
+
+        // MESSAGES
+
+        localStorage.setItem("userToChat", null);
+        
+
+        // Message Counter
+        
+        var messageCounter = 0;
+        var readMessageCounter = 0;
+        var sentMessageCounter = 0;
+
+        function getMessageCounter(){
+            if(localStorage.getItem("getMessageCounters") == "true"){
+                get(child(dataRef, "users/" + userActive + "/messages/" + userToChat + "/messageCounter"))
+                .then((snapshot) => {
+                    messageCounter = snapshot.val();
+                });
+
+                get(child(dataRef, "users/" + userActive + "/messages/" + userToChat + "/readMessageCounter"))
+                .then((snapshot) => {
+                    readMessageCounter = snapshot.val();
+                });
+
+                get(child(dataRef, "users/" + userToChat + "/messages/" + userActive + "/messageCounter"))
+                .then((snapshot) => {
+                    sentMessageCounter = snapshot.val();
+                });
+
+                localStorage.setItem("getMessageCounters", "false");
+            }
+        }
+
+        function updateSentMessageCounter(){
+            sentMessageCounter++;
+            update(ref(firebase_database, "users/" + userToChat + "/messages/" + userActive),{
+                messageCounter: sentMessageCounter
+            });
+        }
+
+        function updateReadMessageCounter(){
+            readMessageCounter++;
+            update(ref(firebase_database, "users/" + userActive + "/messages/" + userToChat),{
+                readMessageCounter: readMessageCounter
+            });
+        }
+
+        // Read Messages
+
+        const chat = document.querySelector('#chat');
+        const chat_input = document.querySelector('#chat-input');
+        const message_part = document.querySelector("#msg-part");
+
+        function setReceivedMessage(messageContent){
+            let message_container = document.createElement('div');
+            message_container.classList.add("msg-inbox");
+            message_container.classList.add("received");
+            let message = document.createElement('p');
+            message.innerHTML = messageContent;
+            message_container.appendChild(message);
+            message_part.appendChild(message_container);
+            setScrollBar();
+        }
+
+        var interval_messages_id = function getAllMessages(){      
+            getUsers();      
+            if(userToChat != null){
+                getMessageCounter();
+                if(readMessageCounter < messageCounter){
+                    get(child(dataRef, "users/" + userActive + "/messages/" + userToChat + "/" + readMessageCounter + "/messageContent"))
+                    .then((snapshot) => {
+                        var messageContent = snapshot.val();
+                        setReceivedMessage(messageContent);
+                    });
+                    updateReadMessageCounter();
+                }
+            }
+
+            console.log("catche");
+        }
+
+        // Send Message
+
+        const send_message_button = document.querySelector('#send-message');
+        send_message_button.addEventListener('click', () => {
+            let message_container = document.createElement('div');
+            message_container.classList.add("msg-inbox");
+            message_container.classList.add("sent");
+            let message = document.createElement('p');
+            message.innerHTML = chat_input.value;
+            message_container.appendChild(message);
+            message_part.appendChild(message_container);
+
+            set(ref(firebase_database, "users/" + userToChat + "/messages/" + userActive + "/" + sentMessageCounter),{
+                messageContent: chat_input.value
+            });
+
+            setScrollBar();
+            updateSentMessageCounter();
+            chat_input.value = "";
+        });
+
+        function onStart(){
+            getUsers();
+            getAllFriends();
+            window.setInterval(interval_messages_id, 1000);
+        }
+
+        // Set scroll bar
+        var messageBody = document.querySelector('#msg-page');
+        function setScrollBar(){
+            if(messageBody.scroll != null){
+                messageBody.scrollTop = messageBody.scrollHeight;
+            }
+        }
+
+        window.onload = onStart;
+
+    </script>
+
+</body>
+</html>

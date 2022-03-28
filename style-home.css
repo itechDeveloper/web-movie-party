@@ -1,0 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100&family=Ubuntu:wght@300;400;700&display=swap');
+
+/*GENERAL*/
+
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body{
+    font-family: 'Ubuntu', sans-serif;
+}
+
+
+/*CHAT PART*/
+
+.home-container{
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-color: #fff;
+    overflow: hidden;
+}
+
+#chat-container{
+    position: relative;
+    background-color: #464646;
+    height: 100vh;
+}
+
+#chat-container.chat-mode .table{
+    transform: translate(400px);
+}
+
+#button-friend{
+    width: 100%;
+    height: 40px;
+    text-align: left;
+}
+
+.table,
+.chat{
+    position: absolute;
+    width: 90%;
+    transition: 1.2s .3s ease-in-out;
+    z-index: 3;
+}
+
+.table{
+    margin-top: 10px;
+    padding: 4px;
+}
+
+thead{
+    color: #fff;
+}
+
+.chat{
+    bottom: 0;
+    padding: 10px;
+    height: 100%;
+    transform: translate(400px);
+}
+
+.input-group{
+    position: absolute;
+    bottom: 0;
+    z-index: 2;
+}
+
+.input-group.add-delete-friend{
+    width: 90%;
+    transition: 1.2s .3s ease-in-out;
+}
+
+.chat-mode .input-group.add-delete-friend{
+    transform: translate(400px);
+}
+
+#chat-container.chat-mode .chat{
+    transform: translate(-0px);
+}
+
+.form-control{
+    position: absolute;
+    z-index: 3;
+}
+
+#back-button{
+    height: 30px;
+    width: 30px;
+    color: #fff;
+}
+
+#back-button i{
+    height: 100%;
+    width: 100%;
+    font-size: 20px;
+    transition: .2s .1s ease-in-out;
+}
+
+#back-button:hover{
+    cursor: pointer;
+}
+
+#back-button i:hover{
+    font-size: 25px;
+}
+
+/* MESSAGE PART */
+
+.chat-page{
+    position: absolute;
+    width: 100%;
+    padding-top: 10px;
+    height: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.msg-inbox{
+    overflow: hidden;
+    padding-bottom: 15px;
+}
+
+.msg-page{
+    height: 88%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.msg-page::-webkit-scrollbar{
+    width: .6vw;
+}
+
+.msg-page::-webkit-scrollbar-thumb{
+    background-color: #7775;
+}
+
+.msg-page::-webkit-scrollbar-thumb:hover{
+    background-color: #777;
+}
+
+.msg-page::-webkit-scrollbar-track{
+    background-color: #5555;
+}
+
+.msg-page::-webkit-scrollbar-track:hover{
+    background-color: #555;
+}
+
+.msg-part{
+    display: inline-block;
+    padding: 0 5 0 10px;
+    vertical-align: top;
+    width: 95%;
+}
+
+.msg-inbox{
+    width: 100%;
+}
+
+.msg-inbox p{
+    border-radius: 10px;
+    font-size: 14px;
+    margin: 0;
+    padding: 5px 10px 5px 12px;
+    width: 100%;
+}
+
+.msg-inbox .received p{
+    background: #000000 none repeat scroll 0 0;
+    color: #ffffff;
+}
+
+.msg-inbox .sent p{
+    background: #ffffff none repeat scroll 0 0;
+    color: #0a0a0a;
+}

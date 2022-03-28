@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!--CSS link-->
+    <link href="style.css" rel="stylesheet">
+
+    <!--Fontawesome link-->  
+    <script src="https://kit.fontawesome.com/1a6f498f86.js" crossorigin="anonymous"></script>
+
+    <title>Movie Party</title>
+</head>
+
+<body>
+
+    <!--HTML CODES-->
+    
+    <div class="container">
+
+        <!--FORMS-->    
+        <div class="forms-container">
+            <div class="signin-signup">
+
+                <!--Sign in-->
+                <form action="" class="sign-in-form">
+                    <h2 class="title">Sign In</h2>
+
+                    <div class="input-field">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" placeholder="Username" id="signin-username">
+                    </div>
+
+                    <div class="input-field">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="Password" id="signin-password">
+                    </div>
+
+                    <input type="button" value="Sign In" class="btn solid" id="submit-sign-in">
+                </form>
+
+                <!--Sign up-->
+                <form action="" class="sign-up-form">
+                    <h2 class="title">Sign Up</h2>
+
+                    <div class="input-field">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" placeholder="Username" id="signup-username">
+                    </div>
+
+                    <div class="input-field">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" placeholder="Password" id="signup-password">
+                    </div>
+
+                    <input type="button" value="Sign up" class="btn solid" id="submit-sign-up">
+                </form>
+
+            </div>
+        </div>
+
+        <!--PANELS-->
+        <div class="panels-container">
+
+            <!--Left Panel-->
+            <div class="panel left-panel">
+                <div class="content">
+                    <h3>New Here?</h3>
+                    <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut a ipsam maxime repellendus et quae provident temporibus, maiores itaque.</p>
+                    <button class="btn transparent" id="sign-up-btn">Sign up</button>
+                </div>
+                <img src="img/log.svg" class="image" alt="">
+            </div>
+
+            <!--Right Panel-->
+            <div class="panel right-panel">
+                <div class="content">
+                    <h3>One of us?</h3>
+                    <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut a ipsam maxime repellendus et quae provident temporibus, maiores itaque.</p>
+                    <button class="btn transparent" id="sign-in-btn">Sign in</button>
+                </div>
+                <img src="img/register.svg" class="image" alt="">
+            </div>
+        </div>
+
+    </div>
+
+    <!--JavaScript Codes-->
+
+    <script src="app.js"></script>
+
+    <script type="module">
+
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
+        import { getDatabase, ref, child, onValue, get, set } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+      
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyCBEWYsah0qKPCHrzVDKh5Zsn2w6pXCMqw",
+          authDomain: "web-movie-party.firebaseapp.com",
+          projectId: "web-movie-party",
+          storageBucket: "web-movie-party.appspot.com",
+          messagingSenderId: "192093684269",
+          appId: "1:192093684269:web:da1360e0cd6e2057f9eea4"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const firebase_database = getDatabase();
+        const dataRef = ref(firebase_database);
+
+        
+        // SIGN IN
+        var signin_username = document.getElementById('signin-username');
+        var signin_password = document.getElementById('signin-password');
+
+        const sign_in_btn = document.getElementById("submit-sign-in");
+        sign_in_btn.addEventListener('click', () => {
+            get(child(dataRef, "users/"+ signin_username.value +"/password"))
+            .then((snapshot) => {
+                if(signin_password.value == snapshot.val()){
+                    alert("Success");
+                    localStorage.setItem("userActive", signin_username.value);
+                    window.open("file:///D:/GitHub/web-movie-party/home.html");
+                }
+            });
+        });
+
+        // SIGN UP
+        var signup_username = document.getElementById('signup-username');
+        var signup_password = document.getElementById('signup-password');
+
+        const sign_up_btn = document.getElementById("submit-sign-up");
+        sign_up_btn.addEventListener('click', () => {
+            set(ref(firebase_database, "users/" + signup_username.value),{
+                password: signup_password.value
+            })
+            .then(()=>{
+                alert("data is stored");
+            })
+            .catch((error)=>{
+                alert("error: " + error)
+            });
+        });
+        
+    </script>
+    
+</body>
+
+</html>
