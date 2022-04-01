@@ -27,7 +27,24 @@
 
             <!--MOVIE PART-->
             <div class="col-9" id="movie-container">
-                <button onclick="downloadMovie()">Download</button>
+
+                <div class="container">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="namebox">
+                        <button class="btn btn-outline-light" type="button" id="select-button">Select</button>
+                        <button class="btn btn-outline-light" type="button" id="upload-button">Upload</button>
+                        <button class="btn btn-outline-light" type="button" id="download-button">Download</button>
+                        <button class="btn btn-outline-light" type="button" id="start-button">Start</button>
+                    </div>
+
+                    <label id = "extensionbox"></label> 
+                    <label id = "progressbox"></label>
+                </div>
+
+                <video class="" id="video" controls="controls">
+                    <source id="src">
+                </video>
+            
             </div>
 
             <!--CHAT PART-->
@@ -67,13 +84,15 @@
     </div>
 
     <script type="text/javascript" src="chatmode.js"></script>
-    <script src="downloadHelper.js"></script>
 
     <script type="module">
+
+        //------------------------------------------FIREBASE INIT---------------------------------------//
 
         // https://firebase.google.com/docs/web/setup#available-libraries
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-app.js";
         import { getDatabase, ref, child, onValue, get, set, update, remove } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.9/firebase-storage.js";
       
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -89,6 +108,11 @@
         const app = initializeApp(firebaseConfig);
         const firebase_database = getDatabase(app);
         const dataRef = ref(firebase_database);
+
+
+
+        //------------------------------------------CHAT PART---------------------------------------//
+
 
         // USERS
 
@@ -343,8 +367,6 @@
                     updateReadMessageCounter();
                 }
             }
-
-            console.log("catche");
         }
 
         // Send Message
@@ -368,18 +390,263 @@
             chat_input.value = "";
         });
 
-        function onStart(){
-            getUsers();
-            getAllFriends();
-            window.setInterval(interval_messages_id, 1000);
-        }
-
         // Set scroll bar
         var messageBody = document.querySelector('#msg-page');
         function setScrollBar(){
             if(messageBody.scroll != null){
                 messageBody.scrollTop = messageBody.scrollHeight;
             }
+        }
+
+
+        //------------------------------------------MOVIE PART---------------------------------------//
+
+
+         // INIT VARIABLES
+
+         var files = [];
+        var reader = new FileReader();
+
+        var namebox = document.querySelector("#namebox");
+        var progressbox = document.querySelector("#progressbox");
+        var extensionbox = document.querySelector("#extensionbox");
+
+        var select_button = document.querySelector("#select-button");
+        var upload_button = document.querySelector("#upload-button");
+        var download_button = document.querySelector("#download-button");
+        var start_button = document.querySelector("#start-button");
+
+        var video = document.querySelector("#video");
+        
+        var creator;
+
+
+        // FILE READER
+
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = e => {
+            files = e.target.files;
+
+            var extension = GetFileExtension(files[0]);
+            var name = GetFileName(files[0]);
+
+            namebox.value = name;
+            extensionbox.innerHTML = extension;
+            
+            reader.readAsDataURL(files[0]);
+        }
+
+        reader.onload = function(){
+            video.src = reader.result;
+        }
+
+
+        // FILE -> NAME & EXTENSION
+
+        function GetFileExtension(file){
+            var temp = file.name.split('.');
+            var extension = temp.slice((temp.length - 1), (temp.length));
+            return '.' + extension[0];
+        }
+
+        function GetFileName(file){
+            var temp = file.name.split('.');
+            var name = temp.slice(0,-1).join('.');
+            return name;
+        }
+
+
+        // SELECTION & START
+
+        select_button.onclick = function(){
+            input.click();
+        }
+        
+        start_button.onclick = function(){
+            creator = "me";
+            video.classList.add("onplay");
+
+        }
+
+        // UPLOAD MOVIE
+
+        async function UploadMovie(){
+            var movieToUpload = files[0];
+            var movieName = namebox.value + extensionbox.innerHTML;
+
+            if(!validateName()){
+                alert('name cannot contain ".", "#", "$", "[" or "]"');
+                return;
+            }
+            
+            const metaData = {
+                contentType: movieToUpload.type
+            }
+
+            const storage = getStorage();
+            const storageRef = sRef(storage, "movies/" + movieName);
+            const uploadTask = uploadBytesResumable(storageRef, movieToUpload, metaData);
+
+            uploadTask.on('state-changed', (snapshot) => {
+                var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                progressbox.innerHTML = "progress: " + progress + "%";
+            }, (error) => {
+                alert("error: " + error);
+            }, () => {
+                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                    sendUrlToRealtime(downloadURL);
+                });
+            });
+        }
+
+        upload_button.onclick = UploadMovie;
+
+
+        // REALTIME DATABASE
+
+        function sendUrlToRealtime(URL){
+            var name = namebox.value;
+            var extension = extensionbox.value;
+
+            set(ref(firebase_database, "movies/links/" + name), {
+                name: (name + extension),
+                url: URL
+            });
+        }
+
+        function getUrlFromRealtime(){
+            var name = namebox.value;
+            get(child(dataRef, "movies/links/" + name)).then((snapshot) => {
+                if(snapshot.exists()){
+                    video.src = snapshot.val().url;
+                    video.classList.add("onplay");
+                    creator = "not me";
+                }
+            })
+        }
+
+        function validateName(){
+            var regex = /[\.#$\[\]]/
+            return !(regex.test(namebox.value));
+        }
+
+
+         // DOWNLOAD MOVIE
+
+         download_button.onclick = getUrlFromRealtime;
+
+
+         // CHECK STATUS
+
+         var playingInfoLocal;
+         var playingInfoFromCloud;
+         var status = "not playing";
+
+
+         function checkStatus(){
+
+            playingInfoLocal = !!(video.currentTime > 0 && !video.paused && !video.ended && video.readyState > 2);
+
+            if(playingInfoFromCloud == "not playing"){
+                
+                if(status == "playing"){
+                    status = "not playing";
+                    video.pause();
+                    console.log("cloud stopped video!");
+                }
+                
+                else if(status == "not playing"){
+                    if(playingInfoLocal){
+                        setPlayingInfoToCloud("playing");
+                        status = "playing";
+                        video.play();
+                        console.log("local started video!");
+                    }
+                }
+            }
+            
+            if (playingInfoFromCloud == "playing"){
+
+                if(status == "not playing"){
+                    getMovieTimeInfoFromCloud();
+                    status = "playing";
+                    video.play();
+                    console.log("cloud started video!");
+                }
+                 
+                else if(status == "playing"){
+                    if(!playingInfoLocal){
+                        setPlayingInfoToCloud("not playing");
+                        status = "not playing";
+                        video.pause();
+                        console.log("local stopped video!");
+                    }
+                }
+            }
+        
+        }
+
+        function setPlayingInfoToCloud(info){
+
+            if(creator == "me"){
+                set(ref(firebase_database, "movies/" + "/status/" + userActive + "/" + userToChat), {
+                    playing: info,
+                    time: Math.floor(video.currentTime)
+                });
+            }
+            
+            if(creator == "not me"){
+                set(ref(firebase_database, "movies/" + "/status/" + userToChat + "/" + userActive), {
+                    playing: info,
+                    time: Math.floor(video.currentTime)
+                });
+            }
+
+        }
+
+        function getMovieTimeInfoFromCloud(time){
+            get(child(dataRef, "movies/" + "/status/" + userToChat + "/" + userActive + "/time")).then((snapshot) => {
+                if(snapshot.exists()){
+                    video.currentTime = Math.floor(snapshot.val());
+                }
+            });
+        }
+
+        var interval_status = function getPlayingInfoFromCloud() {
+
+            if(creator == "me"){
+                get(child(dataRef, "movies/" + "/status/" + userActive + "/" + userToChat + "/playing")).then((snapshot) => {
+                    if(snapshot.exists()){
+                        playingInfoFromCloud = snapshot.val();
+                        checkStatus();
+                    }else{
+                        setPlayingInfoToCloud("not playing");
+                    }
+                });
+            }
+            
+            if(creator == "not me"){
+                get(child(dataRef, "movies/" + "/status/" + userToChat + "/" + userActive + "/playing")).then((snapshot) => {
+                    if(snapshot.exists()){
+                        playingInfoFromCloud = snapshot.val();
+                        checkStatus();
+                    }else{
+                        setPlayingInfoToCloud("not playing");
+                    }
+                });
+            }
+
+        }
+
+         //------------------------------------------ON START---------------------------------------//
+
+
+        function onStart(){
+            getUsers();
+            getAllFriends();
+            window.setInterval(interval_messages_id, 1000);
+            window.setInterval(interval_status, 1000);
         }
 
         window.onload = onStart;
