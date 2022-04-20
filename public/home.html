@@ -318,8 +318,6 @@
                 .then((snapshot) => {
                     sentMessageCounter = snapshot.val();
                 });
-
-                localStorage.setItem("getMessageCounters", "false");
             }
         }
 
@@ -352,10 +350,11 @@
             message_container.appendChild(message);
             message_part.appendChild(message_container);
             setScrollBar();
+            updateReadMessageCounter(); // Update read message counter
         }
 
-        var interval_messages_id = function getAllMessages(){      
-            getUsers();      
+        var interval_messages_id = function getAllMessages(){
+            getUsers();
             if(userToChat != null){
                 getMessageCounter();
                 if(readMessageCounter < messageCounter){
@@ -364,7 +363,6 @@
                         var messageContent = snapshot.val();
                         setReceivedMessage(messageContent);
                     });
-                    updateReadMessageCounter();
                 }
             }
         }
@@ -645,8 +643,8 @@
         function onStart(){
             getUsers();
             getAllFriends();
-            window.setInterval(interval_messages_id, 1000);
-            window.setInterval(interval_status, 1000);
+            setInterval(interval_messages_id, 1000);
+            setInterval(interval_status, 1000);
         }
 
         window.onload = onStart;

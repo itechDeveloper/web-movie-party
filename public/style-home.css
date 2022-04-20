@@ -30,7 +30,7 @@ body{
 }
 
 #chat-container.chat-mode .table{
-    transform: translate(400px);
+    transform: translate(600px);
 }
 
 #button-friend{
@@ -60,7 +60,7 @@ thead{
     bottom: 0;
     padding: 10px;
     height: 100%;
-    transform: translate(400px);
+    transform: translate(600px);
 }
 
 #chat-container .input-group{
@@ -75,7 +75,7 @@ thead{
 }
 
 .chat-mode .input-group.add-delete-friend{
-    transform: translate(400px);
+    transform: translate(600px);
 }
 
 #chat-container.chat-mode .chat{

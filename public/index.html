@@ -124,7 +124,9 @@
                 if(signin_password.value == snapshot.val()){
                     alert("Success");
                     localStorage.setItem("userActive", signin_username.value);
-                    window.open("file:///D:/GitHub/web-movie-party/public/home.html");
+                    window.open("https://web-movie-party.web.app/*");
+                }else{
+                    alert("Something went wrong");
                 }
             });
         });
